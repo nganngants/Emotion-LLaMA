@@ -5,8 +5,8 @@ model:
   end_sym: "</s>"
   low_resource: False
   prompt_template: '[INST] {} [/INST]'
-  llama_model: "/home/user/project/Emotion-LLaMA/checkpoints/Llama-2-7b-chat-hf"
-  ckpt: "/home/user/project/Emotion-LLaMA/checkpoints/save_checkpoint/stage2/checkpoint_best.pth"
+  llama_model: "/workspace/Emotion-LLaMA/checkpoints/Llama-2-7b-chat-hf"
+  ckpt: "/workspace/Emotion-LLaMA/checkpoints/save_checkpoint/stage2/checkpoint_best.pth"
   lora_r: 64
   lora_alpha: 16
 

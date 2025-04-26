@@ -45,16 +45,18 @@ The dataset was initially auto-annotated with coarse-grained labels for 28,618 s
 ```bash
 git clone https://github.com/ZebangCheng/Emotion-LLaMA.git
 cd Emotion-LLaMA
-conda env create -f environment.yaml
+conda env create -f environment.yml
 conda activate llama
 ```
 
 ### Preparing the Pretrained LLM Weights
 
-Download the Llama-2-7b-chat-hf model from Huggingface to `Emotion-LLaMA/checkpoints/`:
+Download the checkpoints:
 
 ```
-> https://huggingface.co/meta-llama/Llama-2-7b-chat-hf  
+wget -P checkpoints/Llama-2-7b-chat-hf https://huggingface.co/meta-llama/Llama-2-7b-chat-hf  
+
+wget -P checkpoints/save_checkpoint/stage2 https://drive.google.com/file/d/1NoPZDj5_392zBtVK1IHO8bepA4910iI_/view?usp=sharing
 ```
 
 Specify the path to Llama-2 in the [model config file](minigpt4/configs/models/minigpt_v2.yaml#L14):
@@ -64,7 +66,7 @@ Specify the path to Llama-2 in the [model config file](minigpt4/configs/models/m
 llama_model: "/home/user/project/Emotion-LLaMA/checkpoints/Llama-2-7b-chat-hf"
 ```
 
-Specify the path to MiniGPT-v2 in the [config file](train_configs\Emotion-LLaMA_finetune.yaml#L9):
+Specify the path to MiniGPT-v2 in the [config file](train_configs/Emotion-LLaMA_finetune.yaml#L9):
 
 ```yaml
 # Set MiniGPT-v2 path
@@ -72,6 +74,91 @@ ckpt: "/home/user/project/Emotion-LLaMA/checkpoints/minigptv2_checkpoint.pth"
 ```
 
 You can refer to the path displayed in [Project Overview](./Overview.md) for storing the downloaded file.
+
+## 🧪 Evaluation
+
+### MER2023 Challenge
+
+To further validate the effectiveness of the Emotion-LLaMA model, we conducted experiments using the MER2023 Challenge dataset and compared our results with previous state-of-the-art supervised methods. The outcomes show that our model, which maps audio and visual features to textual space, achieves the highest F1 score across various modalities. Our results can be replicated using the following steps.
+
+|Method                 | Modality | F1 Score |
+| :--------------       | :------: | :------: |
+wav2vec 2.0             | A        |  0.4028  |
+VGGish                  | A        |  0.5481  |
+HuBERT                  | A        |  0.8511  |
+ResNet                  | V        |  0.4132  |
+MAE                     | V        |  0.5547  |
+VideoMAE                | V        |  0.6068  |
+RoBERTa                 | T        |  0.4061  |
+BERT                    | T        |  0.4360  |
+MacBERT                 | T        |  0.4632  |
+MER2023-Baseline        | A, V     |  0.8675  |
+MER2023-Baseline        | A, V, T  |  0.8640  |
+Transformer             | A, V, T  |  0.8853  |
+FBP                     | A, V, T  |  0.8855  |
+VAT                     | A, V     |  0.8911  |
+Emotion-LLaMA (ours)    | A, V     |  0.8905  |
+**Emotion-LLaMA (ours)**| **A, V, T** | **0.9036** |
+
+Specify the path to the pretrained checkpoint of Emotion-LLaMA in the [evaluation config file](eval_configs/eval_emotion.yaml#L8):
+
+```yaml
+# Set pretrained checkpoint path
+llama_model: "/home/user/project/Emotion-LLaMA/checkpoints/Llama-2-7b-chat-hf"
+ckpt: "/home/user/project/Emotion-LLaMA/checkpoints/save_checkpoint/stage2/checkpoint_best.pth"
+```
+
+Run the following code to evaluate the F1 score on MER2023-SEMI:
+
+```bash
+torchrun --nproc_per_node 1 eval_emotion.py --cfg-path eval_configs/eval_emotion.yaml --dataset feature_face_caption
+```
+
+### EMER Dataset
+Comparison of multimodal emotion reasoning results on the EMER dataset. Clue Overlap and Label Overlap scores range from 0 to 10. Emotion-LLaMA excels beyond these models across both Clue Overlap and Label Overlap.  
+
+|Models                    | Clue Overlap | Label Overlap |
+| :--------------          | :----------: | :----------:  |
+|VideoChat-Text            |    6.42      |     3.94      | 
+|Video-LLaMA               |    6.64      |     4.89      | 
+|Video-ChatGPT             |    6.95      |     5.74      | 
+|PandaGPT                  |    7.14      |     5.51      | 
+|VideoChat-Embed           |    7.15      |     5.65      | 
+|Valley                    |    7.24      |     5.77      | 
+|**Emotion-LLaMA (ours)**  |  **7.83**    |   **6.25**    | 
+
+### MER2024 Challenge
+Emotion-LLaMA similarly achieved state-of-the-art performance, recording an F1 score of 84.52 in the MER-NOISE track. Subsequently, our team, SZTU-CMU, used the results from Emotion-LLaMA as pseudo-labels to secure the championship.     
+| Teams       |   Score       |
+| :---------- | :----------:  |
+| SZTU-CMU	  |   0.8530 (1)  |
+| BZL arc06	  |   0.8383 (2)  |
+| VIRlab		  |   0.8365 (3)  |
+| T_MERG	    |   0.8271 (4)  |
+| AI4AI		    |   0.8128 (5)  |
+| USTC-IAT	  |   0.8066 (6)  |
+| fzq		      |   0.8062 (7)  |
+| BUPT-BIT	  |   0.8059 (8)  |
+| Soul AI		  |   0.8017 (9)  |
+| NWPU-SUST	  |   0.7972 (10) |
+| iai-zjy		  |   0.7842 (11) |
+| SJTU-XLANCE |   0.7835 (12) |
+| ILR		      |   0.7833 (13) |
+| ACRG_GL	    |   0.7782 (14) |
+
+Specify the path to the pretrained checkpoint of Emotion-LLaMA in the [evaluation config file](eval_configs/eval_emotion.yaml#L8):
+
+```yaml
+# Set pretrained checkpoint path
+llama_model: "/home/user/project/Emotion-LLaMA/checkpoints/Llama-2-7b-chat-hf"
+ckpt: "/home/user/project/Emotion-LLaMA/checkpoints/save_checkpoint/stage2/MER2024-best.pth"
+```
+
+Run the following code to evaluate the F1 score on MER2024-NOISE:
+
+```bash
+torchrun  --nproc_per_node 1 eval_emotion.py --cfg-path eval_configs/eval_emotion.yaml --dataset mer2024_caption
+```
 
 ## 🎬 Demo
 
@@ -189,91 +276,6 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 torchrun --nproc-per-node 4 train.py --cfg-path tra
 **6. Next Steps**  
 If you would like to experience the instruction-tuning process and see the performance of Emotion-LLaMA on emotion reasoning tests with the EMER dataset, please refer to Stage 2.
 
-
-## 🧪 Evaluation
-
-### MER2023 Challenge
-
-To further validate the effectiveness of the Emotion-LLaMA model, we conducted experiments using the MER2023 Challenge dataset and compared our results with previous state-of-the-art supervised methods. The outcomes show that our model, which maps audio and visual features to textual space, achieves the highest F1 score across various modalities. Our results can be replicated using the following steps.
-
-|Method                 | Modality | F1 Score |
-| :--------------       | :------: | :------: |
-wav2vec 2.0             | A        |  0.4028  |
-VGGish                  | A        |  0.5481  |
-HuBERT                  | A        |  0.8511  |
-ResNet                  | V        |  0.4132  |
-MAE                     | V        |  0.5547  |
-VideoMAE                | V        |  0.6068  |
-RoBERTa                 | T        |  0.4061  |
-BERT                    | T        |  0.4360  |
-MacBERT                 | T        |  0.4632  |
-MER2023-Baseline        | A, V     |  0.8675  |
-MER2023-Baseline        | A, V, T  |  0.8640  |
-Transformer             | A, V, T  |  0.8853  |
-FBP                     | A, V, T  |  0.8855  |
-VAT                     | A, V     |  0.8911  |
-Emotion-LLaMA (ours)    | A, V     |  0.8905  |
-**Emotion-LLaMA (ours)**| **A, V, T** | **0.9036** |
-
-Specify the path to the pretrained checkpoint of Emotion-LLaMA in the [evaluation config file](eval_configs/eval_emotion.yaml#L8):
-
-```yaml
-# Set pretrained checkpoint path
-llama_model: "/home/user/project/Emotion-LLaMA/checkpoints/Llama-2-7b-chat-hf"
-ckpt: "/home/user/project/Emotion-LLaMA/checkpoints/save_checkpoint/stage2/checkpoint_best.pth"
-```
-
-Run the following code to evaluate the F1 score on MER2023-SEMI:
-
-```bash
-torchrun --nproc_per_node 1 eval_emotion.py --cfg-path eval_configs/eval_emotion.yaml --dataset feature_face_caption
-```
-
-### EMER Dataset
-Comparison of multimodal emotion reasoning results on the EMER dataset. Clue Overlap and Label Overlap scores range from 0 to 10. Emotion-LLaMA excels beyond these models across both Clue Overlap and Label Overlap.  
-
-|Models                    | Clue Overlap | Label Overlap |
-| :--------------          | :----------: | :----------:  |
-|VideoChat-Text            |    6.42      |     3.94      | 
-|Video-LLaMA               |    6.64      |     4.89      | 
-|Video-ChatGPT             |    6.95      |     5.74      | 
-|PandaGPT                  |    7.14      |     5.51      | 
-|VideoChat-Embed           |    7.15      |     5.65      | 
-|Valley                    |    7.24      |     5.77      | 
-|**Emotion-LLaMA (ours)**  |  **7.83**    |   **6.25**    | 
-
-### MER2024 Challenge
-Emotion-LLaMA similarly achieved state-of-the-art performance, recording an F1 score of 84.52 in the MER-NOISE track. Subsequently, our team, SZTU-CMU, used the results from Emotion-LLaMA as pseudo-labels to secure the championship.     
-| Teams       |   Score       |
-| :---------- | :----------:  |
-| SZTU-CMU	  |   0.8530 (1)  |
-| BZL arc06	  |   0.8383 (2)  |
-| VIRlab		  |   0.8365 (3)  |
-| T_MERG	    |   0.8271 (4)  |
-| AI4AI		    |   0.8128 (5)  |
-| USTC-IAT	  |   0.8066 (6)  |
-| fzq		      |   0.8062 (7)  |
-| BUPT-BIT	  |   0.8059 (8)  |
-| Soul AI		  |   0.8017 (9)  |
-| NWPU-SUST	  |   0.7972 (10) |
-| iai-zjy		  |   0.7842 (11) |
-| SJTU-XLANCE |   0.7835 (12) |
-| ILR		      |   0.7833 (13) |
-| ACRG_GL	    |   0.7782 (14) |
-
-Specify the path to the pretrained checkpoint of Emotion-LLaMA in the [evaluation config file](eval_configs/eval_emotion.yaml#L8):
-
-```yaml
-# Set pretrained checkpoint path
-llama_model: "/home/user/project/Emotion-LLaMA/checkpoints/Llama-2-7b-chat-hf"
-ckpt: "/home/user/project/Emotion-LLaMA/checkpoints/save_checkpoint/stage2/MER2024-best.pth"
-```
-
-Run the following code to evaluate the F1 score on MER2024-NOISE:
-
-```bash
-torchrun  --nproc_per_node 1 eval_emotion.py --cfg-path eval_configs/eval_emotion.yaml --dataset mer2024_caption
-```
 
 ## 🙏 Acknowledgements
 
