@@ -16,17 +16,22 @@ class FaceDataset(data.Dataset):
         self.frames = self.get_frames()
 
     def get_frames(self):
-        # Load the video from self.path and extract the first 16 frames
+        # Load the video from self.path and extract the first 16 frames as PIL Images
         video_capture = cv2.VideoCapture(self.path)
         
         frames = []
         for _ in range(16):
             try:
                 success, frame = video_capture.read()
+                if not success:
+                    break
+                # Convert BGR (OpenCV) to RGB and then to PIL Image
+                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                pil_image = Image.fromarray(frame_rgb)
+                frames.append(pil_image)
             except Exception as e:
                 print(f"Error reading frame: {e}")
                 break
-            frames.append(frame)
 
         video_capture.release()
         return frames

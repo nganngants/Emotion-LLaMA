@@ -18,7 +18,6 @@ from timm.models.layers import trunc_normal_
 import sys
 
 sys.path.append('../../')
-import config
 from dataset import FaceDataset
 
 from mae import models_vit
@@ -52,10 +51,10 @@ if __name__ == '__main__':
     # parser.add_argument('--pretrain_model', type=str, default='mae_random_300', help='pth of pretrain MAE model')
     # parser.add_argument('--pretrain_model', type=str, default='mae_DFEW_ck16', help='pth of pretrain MAE model')
     # parser.add_argument('--feature_name', type=str, default='mae_DFEW_ck16', help='pth of pretrain MAE model')
-    parser.add_argument('--checkpoint_file', type=str, default='./feature_extract/models/maeVideo_ckp399.pth', help='pth of pretrain MAE model')
+    parser.add_argument('--checkpoint_file', type=str, default='./feature_extract/models/mae_checkpoint-340.pth', help='pth of pretrain MAE model')
     parser.add_argument('--feature_name', type=str, default='mae_340', help='pth of pretrain MAE model')
 
-    parser.add_argument('--device', default='cpu',
+    parser.add_argument('--device', default='cuda:0',
                         help='device to use for training / testing')
     parser.add_argument('--model', default='vit_large_patch16', type=str, metavar='MODEL',
                         help='Name of model to train vit_large_patch16 vit_huge_patch14')
@@ -74,7 +73,7 @@ if __name__ == '__main__':
     # if not os.path.exists(save_dir): os.makedirs(save_dir)
     
     face_dir = params.face_dir
-    save_dir = params
+    save_dir = params.save_dir
 
     if not os.path.exists(save_dir): 
         os.makedirs(save_dir)

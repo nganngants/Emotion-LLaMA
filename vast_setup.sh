@@ -11,6 +11,8 @@ source ~/.bashrc
 
 apt-get update && apt-get install vim wget -y
 
+apt-get install ffmpeg libsm6 libxext6 -y
+
 pip install -U gdown
 gdown 1qobIrZ_3vfDzWSU81MN4Hs1_iD1xhAIm
 gdown 1KZEd-KrOsF8BzahlP-v3pGKlR1xvRcD2
