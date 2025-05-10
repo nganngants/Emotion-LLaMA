@@ -175,29 +175,39 @@ class MESCVideoDataset(data.Dataset):
 
             # Read the frames from the video file
             current_frame = 0
-    
-            for index in segment_indices:
+            for start_idx in segment_indices:
                 # If we need to skip frames to reach the target index
-                if current_frame != index:
-                    cap.set(cv2.CAP_PROP_POS_FRAMES, index)
-                    current_frame = index
-                
-                # Read the frame
-                ret, frame = cap.read()
-                if ret:
+                start_idx = int(start_idx)
+                if start_idx > current_frame:
+                    for _ in range(start_idx - current_frame):
+                        cap.grab()
+                    current_frame = start_idx
+                for offset in range(self.duration):
+                    if current_frame + offset >= num_frames:
+                        break
+                    
+                    ret, frame = cap.read()
+                    if not ret:
+                        break
+                        
+                    # Add to our final list
+                    frame = Image.fromarray(frame)
                     images.append(frame)
-                    current_frame += 1
-                else:
-                    print(f"Warning: Could not read frame at index {index}")
+                
+                current_frame = start_idx + self.duration
+
+        # print("images shape: ", len(images), images[0].shape)
+        images = self.transform(images)
+
+        images = torch.reshape(images, (-1, 3, self.image_size, self.image_size))
 
         images = images.view((16, 3) + images.size()[-2:]).transpose(0, 1)
-        # print("images shape: ", images.shape)
 
         return  images, video_name
         # return  (pixel_values, mask)
     
     def __len__(self):
-        return len(self.video_list)
+        return len(self.video_files)
     
 
 def train_data_loader(face_dir):
@@ -227,7 +237,7 @@ def test_data_loader(face_dir):
     # "/home/amax/big_space/datasets/MER2023/dataset-process/my-process/all_NCEV.txt"
     # "/home/amax/big_space/datasets/MER2024/dataset-process/my-process/MER2024_12065_NCE.txt"
     # "/home/amax/big_space/datasets/MER2024/EMER/EMER_332_NCE.txt"
-    test_data = VideoDataset(face_dir=face_dir,
+    test_data = MESCVideoDataset(face_dir=face_dir,
                              num_segments=8,
                              duration=2,
                              mode='test',

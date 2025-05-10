@@ -131,7 +131,7 @@ if __name__ == '__main__':
 
     if True:
         # checkpoint_file = os.path.join(config.PATH_TO_PRETRAINED_MODELS, 'maeVideo', params.pretrain_model + '.pth')
-        checkpoint_file = ".feature_extract/models/maeVideo_ckp399.pth"
+        checkpoint_file = "./feature_extract/models/maeVideo_ckp399.pth"
         print("Load pre-trained checkpoint from: %s" % checkpoint_file)
         checkpoint = torch.load(checkpoint_file, map_location='cpu')
 
