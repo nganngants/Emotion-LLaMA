@@ -10,6 +10,7 @@ import glob
 import os
 from .video_transform import *
 import numpy as np
+import cv2
 
 class VideoRecord(object):
     def __init__(self, row):
@@ -118,7 +119,88 @@ class VideoDataset(data.Dataset):
         return len(self.video_list)
 
 
-def train_data_loader(list_file, face_dir):
+class MESCVideoDataset(data.Dataset):
+    def __init__(self, face_dir, num_segments, duration, mode, transform, image_size):
+        self.face_dir = face_dir
+        self.duration = duration
+        self.num_segments = num_segments
+        self.transform = transform
+        self.image_size = image_size
+        self.mode = mode
+        self._parse_list()
+        pass
+
+    def _parse_list(self):
+        self.video_files = glob.glob(os.path.join(self.face_dir, '*.mp4'))
+
+        print(('video number:%d' % (len(self.video_files))))
+
+    def _get_train_indices(self, num_frames):
+        # split all frames into seg parts, then select frame in each part randomly
+        average_duration = (num_frames - self.duration + 1) // self.num_segments
+        if average_duration > 0:
+            offsets = np.multiply(list(range(self.num_segments)), average_duration) + randint(average_duration, size=self.num_segments)
+        elif num_frames > self.num_segments:
+            offsets = np.sort(randint(num_frames - self.duration + 1, size=self.num_segments))
+        else:
+            offsets = np.zeros((self.num_segments,))
+        return offsets
+    
+    def _get_test_indices(self, num_frames):
+        # split all frames into seg parts, then select frame in the mid of each part
+        if num_frames > self.num_segments + self.duration - 1:
+            tick = (num_frames - self.duration + 1) / float(self.num_segments)
+            offsets = np.array([int(tick / 2.0 + tick * x) for x in range(self.num_segments)])
+        else:
+            offsets = np.zeros((self.num_segments,))
+        return offsets
+    
+    def __getitem__(self, index):
+        file = self.video_files[index]
+        video_name = file.split('/')[-1]
+        # print(video_name)
+
+        images = []
+
+        if self.mode == 'train':
+            return NotImplementedError("Train mode is not implemented for MESCVideoDataset")
+        elif self.mode == 'test':
+            # Open the video file using OpenCV, get the number of frames, get the indices, get the frames images and transform them
+            cap = cv2.VideoCapture(file)
+            num_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            if num_frames == 0:
+                print("Warning: number of frames of video {} should not be zero.".format(video_name))
+                return None, video_name
+            segment_indices = self._get_test_indices(num_frames)
+
+            # Read the frames from the video file
+            current_frame = 0
+    
+            for index in segment_indices:
+                # If we need to skip frames to reach the target index
+                if current_frame != index:
+                    cap.set(cv2.CAP_PROP_POS_FRAMES, index)
+                    current_frame = index
+                
+                # Read the frame
+                ret, frame = cap.read()
+                if ret:
+                    images.append(frame)
+                    current_frame += 1
+                else:
+                    print(f"Warning: Could not read frame at index {index}")
+
+        images = images.view((16, 3) + images.size()[-2:]).transpose(0, 1)
+        # print("images shape: ", images.shape)
+
+        return  images, video_name
+        # return  (pixel_values, mask)
+    
+    def __len__(self):
+        return len(self.video_list)
+    
+
+def train_data_loader(face_dir):
     image_size = 224
     # GroupRandomSizedCrop(image_size),
     train_transforms = torchvision.transforms.Compose([
@@ -126,8 +208,7 @@ def train_data_loader(list_file, face_dir):
                                                        GroupRandomHorizontalFlip(),
                                                        Stack(),
                                                        ToTorchFormatTensor()])
-    train_data = VideoDataset(list_file=list_file,
-                              face_dir=face_dir,
+    train_data = MESCVideoDataset(face_dir=face_dir,
                               num_segments=8,
                               duration=2,
                               mode='train',
@@ -136,7 +217,7 @@ def train_data_loader(list_file, face_dir):
     return train_data
 
 
-def test_data_loader(list_file, face_dir):
+def test_data_loader(face_dir):
     image_size = 224
     test_transform = torchvision.transforms.Compose([GroupResize(image_size),
                                                      Stack(),
@@ -146,8 +227,7 @@ def test_data_loader(list_file, face_dir):
     # "/home/amax/big_space/datasets/MER2023/dataset-process/my-process/all_NCEV.txt"
     # "/home/amax/big_space/datasets/MER2024/dataset-process/my-process/MER2024_12065_NCE.txt"
     # "/home/amax/big_space/datasets/MER2024/EMER/EMER_332_NCE.txt"
-    test_data = VideoDataset(list_file=list_file,
-                             face_dir=face_dir,
+    test_data = VideoDataset(face_dir=face_dir,
                              num_segments=8,
                              duration=2,
                              mode='test',

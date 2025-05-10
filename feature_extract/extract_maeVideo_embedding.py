@@ -6,20 +6,14 @@
 import os
 import argparse
 import numpy as np
-import matplotlib.pyplot as plt
 
-import torch
-import torch.nn.parallel
-import torch.optim
+import torchvision
 import torch.utils.data
-import torchvision.transforms as transforms
-from timm.models.layers import trunc_normal_
-from timm.models import create_model
-
 import sys
 
+from tqdm import tqdm
+
 sys.path.append('../../')
-import config
 from dataset import FaceDataset
 
 from maeVideo import models_vit
@@ -102,11 +96,12 @@ class TubeMaskingGenerator:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run.')
-    parser.add_argument('--dataset', type=str, default='EMER', help='input dataset')
+    parser.add_argument('--face_dir', type=str, default='./examples', help='input face dir')
+    parser.add_argument('--save_dir', type=str, default='./mae_examples_features', help='output feature dir')
     parser.add_argument('--feature_level', type=str, default='UTTERANCE', help='feature level [FRAME or UTTERANCE]')
     parser.add_argument('--pretrain_model', type=str, default='VoxCeleb_ckp49', help='pth of pretrain MAE model')
     parser.add_argument('--feature_name', type=str, default='VoxCeleb_ckp49', help='pth of pretrain MAE model')
-    parser.add_argument('--device', default='cuda:1',
+    parser.add_argument('--device', default='cuda:0',
                         help='device to use for training / testing')
     parser.add_argument('--model', default='vit_large_patch16', type=str, metavar='MODEL',
                         help='Name of model to train')
@@ -124,36 +119,19 @@ if __name__ == '__main__':
     print(f'==> Extracting maeVideo embedding...')
     # face_dir = config.PATH_TO_RAW_FACE[params.dataset]
     # save_dir = os.path.join(config.PATH_TO_FEATURES[params.dataset], f'{params.feature_name}_{params.feature_level[:3]}')
-    if params.dataset == "MER2023":
-        face_dir = "/home/amax/big_space/datasets/MER2023/dataset-process/openface_face"
-        save_dir = "/home/amax/big_space/datasets/MER2023/dataset-process/features_tmp/maeV_199_UTT"
-        list_file = "/home/amax/big_space/datasets/list_files/MER2023_NCEV.txt"
-    elif params.dataset == "EMER":
-        face_dir = "/home/amax/big_space/datasets/MER2024/EMER/all_face"
-        save_dir = "/home/amax/big_space/datasets/MER2024/EMER/features_tmp/maeV_199_UTT"
-        list_file = "/home/amax/big_space/datasets/list_files/EMER_332_NCE.txt"
-    elif params.dataset == "MER2024":
-        face_dir = "/home/amax/big_space/datasets/MER2024/dataset-process/all_face"
-        save_dir = "/home/amax/big_space/datasets/MER2024/dataset-process/features_tmp/maeV_199_UTT"
-        list_file = "/home/amax/big_space/datasets/list_files/MER2024_12065_NCE.txt"
-    elif params.dataset == "MER2024_20000":
-        face_dir = "/home/amax/big_space/datasets/MER2024/dataset-process/all_face"
-        save_dir = "/home/amax/big_space/datasets/MER2024/dataset-process/features_20000_tmp/maeV_199_UTT"
-        list_file = "/home/amax/big_space/datasets/list_files/MER2024_candidate_20000.txt"
-    elif params.dataset == "DFEW":
-        face_dir = "/home/amax/big_space/datasets/DFEW/dataset-process/openface_face"
-        save_dir = "/home/amax/big_space/datasets/DFEW/dataset-process/features_tmp/maeV_199_UTT"
-        list_file = "/home/amax/big_space/datasets/list_files/DFEW_set_1_train.txt"
-        # list_file = "/home/amax/big_space/datasets/list_files/DFEW_set_1_test.txt"
-    if not os.path.exists(save_dir): os.makedirs(save_dir)
+    face_dir = params.face_dir
+    save_dir = params.save_dir
+    # list_file = "/home/amax/big_space/datasets/list_files/DFEW_set_1_test.txt"
 
+    
+    if not os.path.exists(save_dir): os.makedirs(save_dir)
 
     # load model
     model = vit_large_patch16_224()
 
     if True:
         # checkpoint_file = os.path.join(config.PATH_TO_PRETRAINED_MODELS, 'maeVideo', params.pretrain_model + '.pth')
-        checkpoint_file = "/home/amax/project/MER2024/MER2024-Baseline/pretrained_models/maeVideo/maeVideo_ckp199.pth"
+        checkpoint_file = ".feature_extract/models/maeVideo_ckp399.pth"
         print("Load pre-trained checkpoint from: %s" % checkpoint_file)
         checkpoint = torch.load(checkpoint_file, map_location='cpu')
 
@@ -225,7 +203,7 @@ if __name__ == '__main__':
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
 
     # dataset
-    dataset = test_data_loader(list_file, face_dir)
+    dataset = test_data_loader(face_dir)
     # dataset = train_data_loader(list_file, face_dir)
 
     data_loader = torch.utils.data.DataLoader(
@@ -235,15 +213,12 @@ if __name__ == '__main__':
         drop_last=True,
     )
 
-    i = 1
     vids = len(data_loader)
-    for images, video_name in data_loader:
-        print(f"Processing video ' ({i}/{vids})...")
-        i = i + 1
+    for images, video_name in tqdm(data_loader, total=vids, desc="Processing videos"):
         images = images.to(device)
         embedding = model(images)
 
-        print("embedding :", embedding.shape)
+        # print("embedding :", embedding.shape)
         embedding = embedding.cpu().detach().numpy()
 
         # save results
@@ -272,8 +247,8 @@ if __name__ == '__main__':
                 embedding = np.zeros((EMBEDDING_DIM,))
             elif len(embedding.shape) == 2:
                 embedding = np.mean(embedding, axis=0)
-            print("csv_file: ", csv_file)
-            print("embedding: ", embedding)
+            # print("csv_file: ", csv_file)
+            # print("embedding: ", embedding)
             np.save(csv_file, embedding)
 
 # MER2023
