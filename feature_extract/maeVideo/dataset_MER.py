@@ -184,28 +184,28 @@ class MESCVideoDataset(data.Dataset):
             else:
                 segment_indices = self._get_test_indices(num_frames)
 
-            # Read the frames from the video file
-            current_frame = 0
-            for start_idx in segment_indices:
-                # If we need to skip frames to reach the target index
-                start_idx = int(start_idx)
-                if start_idx > current_frame:
-                    for _ in range(start_idx - current_frame):
-                        cap.grab()
-                    current_frame = start_idx
-                for offset in range(self.duration):
-                    if current_frame + offset >= num_frames:
-                        break
-                    
-                    ret, frame = cap.read()
-                    if not ret:
-                        break
+                # Read the frames from the video file
+                current_frame = 0
+                for start_idx in segment_indices:
+                    # If we need to skip frames to reach the target index
+                    start_idx = int(start_idx)
+                    if start_idx > current_frame:
+                        for _ in range(start_idx - current_frame):
+                            cap.grab()
+                        current_frame = start_idx
+                    for offset in range(self.duration):
+                        if current_frame + offset >= num_frames:
+                            break
                         
-                    # Add to our final list
-                    frame = Image.fromarray(frame)
-                    images.append(frame)
-                
-                current_frame = start_idx + self.duration
+                        ret, frame = cap.read()
+                        if not ret:
+                            break
+                            
+                        # Add to our final list
+                        frame = Image.fromarray(frame)
+                        images.append(frame)
+                    
+                    current_frame = start_idx + self.duration
 
         # print("images shape: ", len(images), images[0].shape)
         images = self.transform(images)
