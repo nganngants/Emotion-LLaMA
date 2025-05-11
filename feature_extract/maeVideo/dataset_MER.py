@@ -171,7 +171,18 @@ class MESCVideoDataset(data.Dataset):
             if num_frames == 0:
                 print("Warning: number of frames of video {} should not be zero.".format(video_name))
                 return None, video_name
-            segment_indices = self._get_test_indices(num_frames)
+            
+            if num_frames < 16:
+                # read all frames, duplicate the last frames
+                for i in range(num_frames):
+                    ret, frame = cap.read()
+                    if ret:
+                        images.append(frame)
+                    else:
+                        print(f"Warning: Could not read frame {i} from video {video_name}")
+                images.append(images[-(16 - num_frames):])
+            else:
+                segment_indices = self._get_test_indices(num_frames)
 
             # Read the frames from the video file
             current_frame = 0

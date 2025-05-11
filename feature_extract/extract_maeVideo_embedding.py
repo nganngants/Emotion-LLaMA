@@ -16,7 +16,6 @@ from tqdm import tqdm
 sys.path.append('../../')
 from dataset import FaceDataset
 
-from maeVideo import models_vit
 from collections import OrderedDict
 from maeVideo.modeling_finetune import vit_large_patch16_224
 from maeVideo.dataset_MER import train_data_loader, test_data_loader
