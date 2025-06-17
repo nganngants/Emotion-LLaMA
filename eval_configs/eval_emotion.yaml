@@ -43,4 +43,4 @@ evaluation_datasets:
 run:
   task: image_text_pretrain
   name: minigptv2_evaluation
-  save_path: /home/user/project/Emotion-LLaMA/results
+  save_path: /workspace/Emotion-LLaMA/results
