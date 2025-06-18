@@ -23,23 +23,17 @@ def parse_args():
 
 def load_model():
     args = parse_args()
-    # args.instruct_ckpt = False # # bbb 2025年1月4日
     cfg = Config(args)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    
     model_config = cfg.model_cfg
     model_cls = registry.get_model_class(model_config.arch)
     model = model_cls.from_config(model_config).to(device)
-    
     vis_processor_cfg = cfg.datasets_cfg.feature_face_caption.vis_processor.train
     vis_processor = registry.get_processor_class(vis_processor_cfg.name).from_config(vis_processor_cfg)
-    
     model.eval()
-    chat = Chat(model, vis_processor, device=device)
-    
-    return chat, device
+    return model, vis_processor, device
 
-chat, device = load_model()
+# Load model and processor once (global, thread-safe)
 
 def get_first_frame(video_path):
     cap = cv2.VideoCapture(video_path)
@@ -51,9 +45,13 @@ def get_first_frame(video_path):
         return frame
     return None
 
+model, vis_processor, device = load_model()
 def process_video_question(video_path, question):
     if not os.path.exists(video_path):
         return "错误：视频文件不存在。"
+
+    # Create a new Chat instance for each request
+    chat = Chat(model, vis_processor, device=device)
 
     chat_state = Conversation(
         system="",
@@ -64,11 +62,8 @@ def process_video_question(video_path, question):
         sep="",
     )
 
-    # chat.upload_img(image, chat_state, [])
-    # chat.upload_img(video_path, chat_state, [])
     chat_state.append_message(chat_state.roles[0], "<video><VideoHere></video> <feature><FeatureHere></feature>")
-    img_list = []
-    img_list.append(video_path)
+    img_list = [video_path]
 
     print('question: ', question)
     print('chat_state: ', chat_state)
