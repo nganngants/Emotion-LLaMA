@@ -3,3 +3,9 @@ __pycache__
 
 *jsonl
 *.npy
+*.mp4
+*.wav
+data/*
+checkpoint/**/*
+*.tar.gz
+*.pyc

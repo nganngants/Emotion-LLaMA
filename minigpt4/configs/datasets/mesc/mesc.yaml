@@ -1,0 +1,11 @@
+datasets:
+  mesc_dataset:
+    data_type: images
+    
+    build_info:
+      image_path: /workspace/Emotion-LLaMA/data/video_data
+      video_path: /workspace/Emotion-LLaMA/data/video_data
+      jsonl_path: /workspace/Emotion-LLaMA/data/train.jsonl
+      features_path: /workspace/Emotion-LLaMA/mesc_features
+      # ann_path: /home/user/selected_face/face_emotion/MERR_coarse_grained.txt
+      # ann_path: /home/user/selected_face/face_emotion/MERR_fine_grained.txt

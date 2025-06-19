@@ -6,7 +6,7 @@ model:
   end_sym: "</s>"
   llama_model: "/workspace/Emotion-LLaMA/checkpoints/Llama-2-7b-chat-hf"
 
-  ckpt: "/workspace/Emotion-LLaMA/checkpoints/minigptv2_checkpoint.pth"
+  ckpt: "/workspace/Emotion-LLaMA/checkpoints/minigptv2_checkpoint"
 
   use_grad_checkpoint: True
   chat_template: True
@@ -15,7 +15,7 @@ model:
 
 
 datasets:    
-  feature_face_caption: 
+  mesc_dataset: 
     batch_size: 1
     vis_processor:
       train:
@@ -43,7 +43,7 @@ run:
   # warmup_lr: 1e-6
 
   weight_decay: 0.05
-  max_epoch: 30
+  max_epoch: 3
   num_workers: 6
   # iters_per_epoch: 5000
   iters_per_epoch: 1000
@@ -61,7 +61,7 @@ run:
   train_splits: ["train"]
 
   device: "cuda"
-  world_size: 2
+  world_size: 1
   dist_url: "env://"
   distributed: True
 
