@@ -7,7 +7,41 @@ from minigpt4.datasets.builders.base_dataset_builder import BaseDatasetBuilder
 
 from minigpt4.datasets.datasets.first_face import FeatureFaceDataset
 from minigpt4.datasets.datasets.mer2024 import MER2024Dataset
+from minigpt4.datasets.datasets.mesc_dataset import MESCDataset
 
+@registry.register_builder("mesc_dataset")
+class FirstfaceCaptionBuilder(BaseDatasetBuilder):
+    train_dataset_cls = MESCDataset
+
+    DATASET_CONFIG_DICT = {"default": "configs/datasets/mesc/mesc.yaml"}
+
+    def _download_ann(self):
+        pass
+
+    def _download_vis(self):
+        pass
+
+    def build(self):
+        self.build_processors()
+
+        build_info = self.config.build_info
+
+        datasets = dict()
+        split = "train"
+
+        # create datasets
+        # [NOTE] return inner_datasets (wds.DataPipeline)
+        dataset_cls = self.train_dataset_cls
+        datasets[split] = dataset_cls(
+            vis_processor=self.vis_processors[split],
+            text_processor=self.text_processors[split],
+            vis_root=build_info.image_path,
+            jsonl_path=build_info.jsonl_path,
+            video_dir=build_info.video_path,
+            features_dir=build_info.features_path,
+        )
+
+        return datasets 
 
 # FeatureFaceDataset
 @registry.register_builder("feature_face_caption")
