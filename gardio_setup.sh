@@ -22,6 +22,7 @@ git config --global user.email "nganngants@gmail.com"
 git config --global user.name "nganngants"
 
 git clone https://huggingface.co/facebook/hubert-large-ll60k checkpoints/transformer/hubert-large-ll60k
-rm -rf checkpoints/Llama-2-7b-chat-hf
-git clone https://huggingface.co/meta-llama/Llama-2-7b-chat-hf checkpoints/Llama-2-7b-chat-hf
+gdown 11MmsYGVAIE3-T79DyIGahwN_eqL_6UNU -O checkpoints/save_checkpoint/Emotion-LLaMA.pth
+# rm -rf checkpoints/Llama-2-7b-chat-hf
+# git clone https://huggingface.co/meta-llama/Llama-2-7b-chat-hf checkpoints/Llama-2-7b-chat-hf
 # https://huggingface.co/facebook/hubert-large-ll60k
